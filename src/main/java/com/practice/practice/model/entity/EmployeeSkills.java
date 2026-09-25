@@ -17,9 +17,8 @@ import java.util.UUID;
 public class EmployeeSkills {
 
   @Id
-  @GeneratedValue(generator = "UUID")
-  @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
-  private UUID id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private long id;
 
   private String skillName;
   private String skillLevel;

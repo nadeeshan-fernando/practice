@@ -13,15 +13,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EmployeeDTO {
-  private UUID employeeId;
+  private long employeeId;
   private String name;
   private String department;
   private List<EmployeeSkillsDTO> skills;
-
-  public EmployeeDTO(UUID employeeId, String name, String department) {
-    this.employeeId = employeeId;
-    this.name = name;
-    this.department = department;
-    this.skills = List.of();
-  }
 }

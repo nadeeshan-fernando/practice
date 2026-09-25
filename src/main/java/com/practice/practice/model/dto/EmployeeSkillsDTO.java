@@ -10,7 +10,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EmployeeSkillsDTO {
-  private UUID skillId;
+  private long skillId;
   private String skillName;
   private String skillLevel;
 }
