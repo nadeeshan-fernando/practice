@@ -49,8 +49,8 @@ public class EmployeeDummyDataServiceImpl implements EmployeeDummyDataService {
             int skillCount = 2 + random.nextInt(4); // 2 to 5 skills
             for (int j = 0; j < skillCount; j++) {
                 EmployeeSkills skill = new EmployeeSkills();
-                skill.setSkillName(randomSkill());
-                skill.setSkillLevel(randomSkillLevel().getLevelLabel());
+                skill.setSkillName(randomSkill().toUpperCase());
+                skill.setSkillLevel(randomSkillLevel().getLevelLabel().toUpperCase());
 
                 employee.addSkill(skill);
             }
