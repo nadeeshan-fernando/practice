@@ -1,5 +1,6 @@
 package com.practice.practice.controller;
 
+import com.practice.practice.model.dto.ApiResponse;
 import com.practice.practice.service.EmployeeSkillsService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ public class EmployeeSkillsController {
   final EmployeeSkillsService employeeSkillsService;
 
   @GetMapping("/all")
-  private List<String> getUniqueSkills(){
+  private ApiResponse<List<String>> getUniqueSkills(){
     return employeeSkillsService.getUniqueSkills();
   }
 }

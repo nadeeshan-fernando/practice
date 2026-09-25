@@ -1,59 +1,140 @@
-# Java Collections Through Production-Style REST APIs
+# Java Collections Through Employee & Skills REST APIs
 
-This README contains **15 production-style API ideas** that demonstrate how Java Collections are commonly used in real Spring Boot backend applications.
+This README is updated to match your current Spring Boot model:
 
-## Goal
+- `Employee`
+- `EmployeeSkills`
+- `EmployeeDummyDataServiceImpl`
 
-These APIs are designed to help practice the most common real-world usage of:
-
-- `List`
-- `Set`
-- `Map`
-- `Queue`
-
-instead of building demo-only endpoints like “show ArrayList” or “show HashSet”.
+It focuses on how Java Collections are used in a more realistic **Employee + Skills** backend example.
 
 ---
 
-## 1. Get all users
+## Current Entity Design
+
+### `Employee`
+
+- `id : UUID`
+- `name : String`
+- `department : String`
+- `skills : List<EmployeeSkills> = new ArrayList<>()`
+
+### `EmployeeSkills`
+
+- `id : UUID`
+- `skillName : String`
+- `skillLevel : String`
+- `employee : Employee`
+
+### Relationship
+
+- One employee can have many skills
+- One skill belongs to one employee
+- Mapping used:
+    - `@OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)`
+    - `@ManyToOne(fetch = FetchType.LAZY)`
+
+### Important Helper Methods
+
+```java
+public void addSkill(EmployeeSkills skill) {
+  skills.add(skill);
+  skill.setEmployee(this);
+}
+
+public void removeSkill(EmployeeSkills skill) {
+  skills.remove(skill);
+  skill.setEmployee(null);
+}
+```
+
+These methods keep **both sides of the relationship in sync**.
+
+---
+
+## Dummy Data Creation Flow
+
+Your dummy data service does the following:
+
+1. Creates `Employee` objects
+2. Randomly assigns:
+    - employee name
+    - department
+    - 2 to 5 skills
+    - skill level
+3. Uses `employee.addSkill(skill)` so each skill is correctly linked back to the employee
+4. Deletes old employee data
+5. Saves all new employees using `employeeRepository.saveAll(employees)`
+
+Because of `cascade = CascadeType.ALL`, saving employees also saves their skills.
+
+---
+
+# Production-Style API Ideas Based on Your Current Model
+
+## 1. Generate dummy employees
 
 **Endpoint**
 
 ```http
-GET /api/users
+POST /api/employees/dummy-data/{count}
 ```
 
 **Purpose**
 
-Return all users in the system.
+Generate random employee data with skills.
+
+**Main Collections Used**
+
+- `List<Employee>`
+- `List<EmployeeSkills>`
+
+**Example Response**
+
+```json
+{
+  "message": "10 dummy employees inserted successfully"
+}
+```
+
+---
+
+## 2. Get all employees
+
+**Endpoint**
+
+```http
+GET /api/employees
+```
+
+**Purpose**
+
+Return all employees with their departments.
 
 **Main Collection Used**
 
-- `List<UserDto>`
+- `List<EmployeeResponseDto>`
 
-**Expected Response**
+**Example Response**
 
 ```json
 {
   "count": 3,
   "data": [
     {
-      "id": 1,
-      "name": "Anton",
-      "role": "ADMIN",
+      "id": "c2d8f1a1-1d46-4db2-b18d-12a1d6b30111",
+      "name": "Anton 1",
       "department": "IT"
     },
     {
-      "id": 2,
-      "name": "Nimal",
-      "role": "USER",
+      "id": "4bbf6b7d-7b6f-4e01-b1a9-22ff91b26002",
+      "name": "Nimal 2",
       "department": "HR"
     },
     {
-      "id": 3,
-      "name": "Kamal",
-      "role": "MANAGER",
-      "department": "IT"
+      "id": "7d06f13e-6af2-4d1b-87fb-4a5300f32003",
+      "name": "Kamal 3",
+      "department": "QA"
     }
   ]
 }
@@ -61,75 +142,38 @@ Return all users in the system.
 
 ---
 
-## 2. Get unique user roles
+## 3. Get employee by id with skills
 
 **Endpoint**
 
 ```http
-GET /api/users/roles
+GET /api/employees/{employeeId}
 ```
 
 **Purpose**
 
-Return unique roles only.
+Return one employee together with all skills.
 
 **Main Collection Used**
 
-- `Set<String>`
+- `List<EmployeeSkillDto>` inside the response DTO
 
-**Expected Response**
-
-```json
-{
-  "count": 3,
-  "data": [
-    "ADMIN",
-    "MANAGER",
-    "USER"
-  ]
-}
-```
-
----
-
-## 3. Group users by department
-
-**Endpoint**
-
-```http
-GET /api/users/grouped-by-department
-```
-
-**Purpose**
-
-Return users grouped by department.
-
-**Main Collection Used**
-
-- `Map<String, List<UserDto>>`
-
-**Expected Response**
+**Example Response**
 
 ```json
 {
   "data": {
-    "IT": [
+    "id": "c2d8f1a1-1d46-4db2-b18d-12a1d6b30111",
+    "name": "Anton 1",
+    "department": "IT",
+    "skills": [
       {
-        "id": 1,
-        "name": "Anton",
-        "role": "ADMIN"
+        "skillName": "JAVA",
+        "skillLevel": "BEGINNER"
       },
       {
-        "id": 3,
-        "name": "Kamal",
-        "role": "MANAGER"
-      }
-    ],
-    "HR": [
-      {
-        "id": 2,
-        "name": "Nimal",
-        "role": "USER"
+        "skillName": "SPRING BOOT",
+        "skillLevel": "ADVANCED"
       }
     ]
   }
@@ -138,7 +182,82 @@ Return users grouped by department.
 
 ---
 
-## 4. Get all available employee skills
+## 4. Get all unique departments
+
+**Endpoint**
+
+```http
+GET /api/employees/departments
+```
+
+**Purpose**
+
+Return unique departments only.
+
+**Main Collection Used**
+
+- `Set<String>`
+
+**Example Response**
+
+```json
+{
+  "count": 4,
+  "data": [
+    "FINANCE",
+    "HR",
+    "IT",
+    "QA"
+  ]
+}
+```
+
+---
+
+## 5. Group employees by department
+
+**Endpoint**
+
+```http
+GET /api/employees/grouped-by-department
+```
+
+**Purpose**
+
+Group employees based on department.
+
+**Main Collection Used**
+
+- `Map<String, List<EmployeeResponseDto>>`
+
+**Example Response**
+
+```json
+{
+  "data": {
+    "IT": [
+      {
+        "id": "c2d8f1a1-1d46-4db2-b18d-12a1d6b30111",
+        "name": "Anton 1"
+      },
+      {
+        "id": "a6737f12-4f41-43d8-a7d6-1aa71f77f004",
+        "name": "Kasun 4"
+      }
+    ],
+    "HR": [
+      {
+        "id": "4bbf6b7d-7b6f-4e01-b1a9-22ff91b26002",
+        "name": "Nimal 2"
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 6. Get all unique skills
 
 **Endpoint**
 
@@ -154,185 +273,60 @@ Return all available skills without duplicates.
 
 - `Set<String>`
 
-**Expected Response**
+**Example Response**
 
 ```json
 {
   "count": 5,
   "data": [
-    "Java",
-    "Spring Boot",
-    "SQL",
-    "React",
-    "Docker"
+    "ANGULAR",
+    "AWS",
+    "JAVA",
+    "REACT",
+    "SPRING BOOT"
   ]
 }
 ```
 
 ---
 
-## 5. Get order count by status
+## 7. Get employees by skill name
 
 **Endpoint**
 
 ```http
-GET /api/orders/status-count
+GET /api/employees/by-skill/{skillName}
+```
+
+**Example**
+
+```http
+GET /api/employees/by-skill/JAVA
 ```
 
 **Purpose**
 
-Return order counts grouped by status.
+Find all employees who have a given skill.
 
 **Main Collection Used**
 
-- `Map<String, Long>`
+- `List<EmployeeResponseDto>`
 
-**Expected Response**
-
-```json
-{
-  "data": {
-    "PENDING": 12,
-    "COMPLETED": 45,
-    "CANCELLED": 3
-  }
-}
-```
-
----
-
-## 6. Get orders grouped by status
-
-**Endpoint**
-
-```http
-GET /api/orders/by-status
-```
-
-**Purpose**
-
-Return orders grouped by order status.
-
-**Main Collection Used**
-
-- `Map<String, List<OrderDto>>`
-
-**Expected Response**
-
-```json
-{
-  "data": {
-    "PENDING": [
-      {
-        "orderId": 101,
-        "customerName": "Anton",
-        "totalAmount": 2500.00
-      },
-      {
-        "orderId": 102,
-        "customerName": "Nimal",
-        "totalAmount": 1800.00
-      }
-    ],
-    "COMPLETED": [
-      {
-        "orderId": 103,
-        "customerName": "Kamal",
-        "totalAmount": 3200.00
-      }
-    ],
-    "CANCELLED": []
-  }
-}
-```
-
----
-
-## 7. Get product filter options
-
-**Endpoint**
-
-```http
-GET /api/products/filter-options
-```
-
-**Purpose**
-
-Return data needed for frontend filter dropdowns.
-
-**Main Collections Used**
-
-- `Set<String>` for unique brands
-- `Set<String>` for unique categories
-
-**Expected Response**
-
-```json
-{
-  "data": {
-    "brands": [
-      "Sony",
-      "Samsung",
-      "LG"
-    ],
-    "categories": [
-      "Electronics",
-      "Home Appliances",
-      "Accessories"
-    ]
-  }
-}
-```
-
----
-
-## 8. Search products by filters
-
-**Endpoint**
-
-```http
-POST /api/products/search
-```
-
-**Sample Request**
-
-```json
-{
-  "category": "Electronics",
-  "brands": ["Sony", "Samsung"],
-  "minPrice": 10000,
-  "maxPrice": 50000
-}
-```
-
-**Purpose**
-
-Search products using multiple filters.
-
-**Main Collections Used**
-
-- Request: `List<String>` for brands
-- Response: `List<ProductDto>`
-
-**Expected Response**
+**Example Response**
 
 ```json
 {
   "count": 2,
   "data": [
     {
-      "id": 201,
-      "name": "Sony Headphones",
-      "brand": "Sony",
-      "category": "Electronics",
-      "price": 25000
+      "id": "c2d8f1a1-1d46-4db2-b18d-12a1d6b30111",
+      "name": "Anton 1",
+      "department": "IT"
     },
     {
-      "id": 202,
-      "name": "Samsung Soundbar",
-      "brand": "Samsung",
-      "category": "Electronics",
-      "price": 42000
+      "id": "7d06f13e-6af2-4d1b-87fb-4a5300f32003",
+      "name": "Kamal 3",
+      "department": "QA"
     }
   ]
 }
@@ -340,78 +334,38 @@ Search products using multiple filters.
 
 ---
 
-## 9. Get permissions by role
+## 8. Group employees by skill level
 
 **Endpoint**
 
 ```http
-GET /api/roles/{roleName}/permissions
-```
-
-**Example**
-
-```http
-GET /api/roles/ADMIN/permissions
+GET /api/employees/grouped-by-skill-level
 ```
 
 **Purpose**
 
-Return unique permissions assigned to a given role.
+Return employees grouped by skill level such as BEGINNER, INTERMEDIATE, ADVANCED.
 
 **Main Collection Used**
 
-- `Set<String>`
+- `Map<String, List<EmployeeSkillSummaryDto>>`
 
-**Expected Response**
-
-```json
-{
-  "role": "ADMIN",
-  "count": 4,
-  "data": [
-    "USER_READ",
-    "USER_CREATE",
-    "USER_UPDATE",
-    "USER_DELETE"
-  ]
-}
-```
-
----
-
-## 10. Get role-permission matrix
-
-**Endpoint**
-
-```http
-GET /api/roles/permission-matrix
-```
-
-**Purpose**
-
-Return all roles mapped to their permissions.
-
-**Main Collection Used**
-
-- `Map<String, Set<String>>`
-
-**Expected Response**
+**Example Response**
 
 ```json
 {
   "data": {
-    "ADMIN": [
-      "USER_READ",
-      "USER_CREATE",
-      "USER_UPDATE",
-      "USER_DELETE"
+    "BEGINNER": [
+      {
+        "employeeName": "Anton 1",
+        "skillName": "JAVA"
+      }
     ],
-    "MANAGER": [
-      "USER_READ",
-      "USER_UPDATE"
-    ],
-    "VIEWER": [
-      "USER_READ"
+    "ADVANCED": [
+      {
+        "employeeName": "Nimal 2",
+        "skillName": "AWS"
+      }
     ]
   }
 }
@@ -419,72 +373,206 @@ Return all roles mapped to their permissions.
 
 ---
 
-## 11. Get status lookup values
+## 9. Get skill count by department
 
 **Endpoint**
 
 ```http
-GET /api/lookups/statuses
+GET /api/employees/skill-count-by-department
 ```
 
 **Purpose**
 
-Return code-description mapping for statuses.
+Return how many skills exist under each department.
 
 **Main Collection Used**
 
-- `Map<String, String>`
+- `Map<String, Long>`
 
-**Expected Response**
+**Example Response**
 
 ```json
 {
   "data": {
-    "P": "Pending",
-    "A": "Approved",
-    "R": "Rejected"
+    "IT": 8,
+    "HR": 4,
+    "QA": 6,
+    "FINANCE": 3
   }
 }
 ```
 
 ---
 
-## 12. Get dashboard summary
+## 10. Get employee count by department
 
 **Endpoint**
 
 ```http
-GET /api/dashboard/summary
+GET /api/employees/count-by-department
 ```
 
 **Purpose**
 
-Return aggregated summary data for dashboard widgets.
+Return employee counts grouped by department.
+
+**Main Collection Used**
+
+- `Map<String, Long>`
+
+**Example Response**
+
+```json
+{
+  "data": {
+    "IT": 5,
+    "HR": 2,
+    "QA": 3,
+    "FINANCE": 1
+  }
+}
+```
+
+---
+
+## 11. Get employee count by skill
+
+**Endpoint**
+
+```http
+GET /api/employees/count-by-skill
+```
+
+**Purpose**
+
+Return how many employees have each skill.
+
+**Main Collection Used**
+
+- `Map<String, Long>`
+
+**Example Response**
+
+```json
+{
+  "data": {
+    "JAVA": 4,
+    "SPRING BOOT": 3,
+    "AWS": 2,
+    "REACT": 2
+  }
+}
+```
+
+---
+
+## 12. Search employees by multiple filters
+
+**Endpoint**
+
+```http
+POST /api/employees/search
+```
+
+**Sample Request**
+
+```json
+{
+  "department": "IT",
+  "skillNames": ["JAVA", "SPRING BOOT"],
+  "skillLevel": "ADVANCED"
+}
+```
+
+**Purpose**
+
+Search employees using department, skills, and skill level.
+
+**Main Collections Used**
+
+- Request: `List<String>`
+- Response: `List<EmployeeResponseDto>`
+
+**Example Response**
+
+```json
+{
+  "count": 1,
+  "data": [
+    {
+      "id": "c2d8f1a1-1d46-4db2-b18d-12a1d6b30111",
+      "name": "Anton 1",
+      "department": "IT"
+    }
+  ]
+}
+```
+
+---
+
+## 13. Get employee filter options
+
+**Endpoint**
+
+```http
+GET /api/employees/filter-options
+```
+
+**Purpose**
+
+Return dropdown values needed by frontend search screens.
+
+**Main Collections Used**
+
+- `Set<String>` for departments
+- `Set<String>` for skill names
+- `Set<String>` for skill levels
+
+**Example Response**
+
+```json
+{
+  "data": {
+    "departments": ["FINANCE", "HR", "IT", "QA"],
+    "skillNames": ["ANGULAR", "AWS", "JAVA", "PYTHON", "REACT"],
+    "skillLevels": ["BEGINNER", "INTERMEDIATE", "ADVANCED"]
+  }
+}
+```
+
+---
+
+## 14. Get department-wise employee summary
+
+**Endpoint**
+
+```http
+GET /api/employees/dashboard-summary
+```
+
+**Purpose**
+
+Return dashboard-style summary data from employee records.
 
 **Main Collections Used**
 
 - `Map<String, Long>`
-- `Map<String, BigDecimal>`
+- `Map<String, List<String>>`
 
-**Expected Response**
+**Example Response**
 
 ```json
 {
   "data": {
-    "userCountByRole": {
-      "ADMIN": 2,
-      "MANAGER": 3,
-      "USER": 18
+    "employeeCountByDepartment": {
+      "IT": 5,
+      "HR": 2,
+      "QA": 3
     },
-    "orderCountByStatus": {
-      "PENDING": 5,
-      "COMPLETED": 40,
-      "CANCELLED": 2
-    },
-    "monthlySales": {
-      "JAN": 250000.00,
-      "FEB": 180000.00,
-      "MAR": 320000.00
+    "topSkillsByDepartment": {
+      "IT": ["JAVA", "SPRING BOOT", "AWS"],
+      "HR": ["EXCEL", "COMMUNICATION"],
+      "QA": ["SQL", "SELENIUM"]
     }
   }
 }
@@ -492,127 +580,31 @@ Return aggregated summary data for dashboard widgets.
 
 ---
 
-## 13. Get audit logs
+## 15. Remove one skill from an employee
 
 **Endpoint**
 
 ```http
-GET /api/audit/logs
+DELETE /api/employees/{employeeId}/skills/{skillId}
 ```
 
 **Purpose**
 
-Return activity logs in ordered form.
+Remove a skill from an employee.
+
+**Why It Is Important**
+
+Because `orphanRemoval = true` is enabled, removing the skill from the employee's skill list also removes that skill record from the database.
 
 **Main Collection Used**
 
-- `List<AuditLogDto>`
+- `List<EmployeeSkills>`
 
-**Expected Response**
-
-```json
-{
-  "count": 3,
-  "data": [
-    {
-      "id": 1,
-      "action": "USER_CREATED",
-      "performedBy": "admin",
-      "time": "2026-04-08T10:00:00"
-    },
-    {
-      "id": 2,
-      "action": "ORDER_APPROVED",
-      "performedBy": "manager1",
-      "time": "2026-04-08T11:15:00"
-    },
-    {
-      "id": 3,
-      "action": "PRODUCT_UPDATED",
-      "performedBy": "admin",
-      "time": "2026-04-08T12:30:00"
-    }
-  ]
-}
-```
-
----
-
-## 14. Get audit logs grouped by user
-
-**Endpoint**
-
-```http
-GET /api/audit/logs/grouped-by-user
-```
-
-**Purpose**
-
-Return audit logs grouped by username.
-
-**Main Collection Used**
-
-- `Map<String, List<AuditLogDto>>`
-
-**Expected Response**
+**Example Response**
 
 ```json
 {
-  "data": {
-    "admin": [
-      {
-        "id": 1,
-        "action": "USER_CREATED",
-        "time": "2026-04-08T10:00:00"
-      },
-      {
-        "id": 3,
-        "action": "PRODUCT_UPDATED",
-        "time": "2026-04-08T12:30:00"
-      }
-    ],
-    "manager1": [
-      {
-        "id": 2,
-        "action": "ORDER_APPROVED",
-        "time": "2026-04-08T11:15:00"
-      }
-    ]
-  }
-}
-```
-
----
-
-## 15. Process next notification
-
-**Endpoint**
-
-```http
-POST /api/notifications/process-next
-```
-
-**Purpose**
-
-Process the next pending notification using queue behavior.
-
-**Main Collection Used**
-
-- `Queue<NotificationDto>` internally
-- Response can be a single object + summary
-
-**Expected Response**
-
-```json
-{
-  "message": "Next notification processed successfully",
-  "processedNotification": {
-    "id": 1,
-    "type": "EMAIL",
-    "message": "Payroll file is ready",
-    "status": "PROCESSED"
-  },
-  "remainingCount": 4
+  "message": "Skill removed successfully"
 }
 ```
 
@@ -620,23 +612,21 @@ Process the next pending notification using queue behavior.
 
 # Suggested DTOs
 
-You can design your DTOs around these simple models:
+You can design DTOs around your current model like this:
 
-- `UserDto`
-- `OrderDto`
-- `ProductDto`
-- `AuditLogDto`
-- `NotificationDto`
-
-You can also create request DTOs like:
-
-- `ProductSearchRequest`
+- `EmployeeResponseDto`
+- `EmployeeDetailsDto`
+- `EmployeeSkillDto`
+- `EmployeeSkillSummaryDto`
+- `EmployeeSearchRequest`
+- `EmployeeFilterOptionsDto`
+- `DashboardSummaryDto`
 
 ---
 
 # Recommended Response Wrapper
 
-To keep the API design professional and consistent, use a common response format.
+To keep the API design clean and consistent, use a common response format.
 
 ## Example for list responses
 
@@ -645,12 +635,14 @@ To keep the API design professional and consistent, use a common response format
   "count": 2,
   "data": [
     {
-      "id": 1,
-      "name": "Anton"
+      "id": "c2d8f1a1-1d46-4db2-b18d-12a1d6b30111",
+      "name": "Anton 1",
+      "department": "IT"
     },
     {
-      "id": 2,
-      "name": "Nimal"
+      "id": "4bbf6b7d-7b6f-4e01-b1a9-22ff91b26002",
+      "name": "Nimal 2",
+      "department": "HR"
     }
   ]
 }
@@ -663,52 +655,124 @@ To keep the API design professional and consistent, use a common response format
   "data": {
     "IT": [
       {
-        "id": 1,
-        "name": "Anton"
+        "id": "c2d8f1a1-1d46-4db2-b18d-12a1d6b30111",
+        "name": "Anton 1"
       }
     ],
     "HR": [
       {
-        "id": 2,
-        "name": "Nimal"
+        "id": "4bbf6b7d-7b6f-4e01-b1a9-22ff91b26002",
+        "name": "Nimal 2"
       }
     ]
   }
 }
 ```
 
-## Example for lookup responses
+## Example for map responses
 
 ```json
 {
   "data": {
-    "A": "Approved",
-    "R": "Rejected",
-    "P": "Pending"
+    "IT": 5,
+    "HR": 2,
+    "QA": 3
   }
 }
 ```
 
 ---
 
-# Implementation Order Recommendation
+# Best Practice Notes Based on Your Code
 
-If you want to build them step by step, follow this order:
+## 1. Initializing the list is correct
 
-1. `GET /api/users`
-2. `GET /api/users/roles`
-3. `GET /api/users/grouped-by-department`
-4. `GET /api/employees/skills`
-5. `GET /api/orders/status-count`
-6. `GET /api/orders/by-status`
-7. `GET /api/lookups/statuses`
-8. `GET /api/roles/{roleName}/permissions`
-9. `GET /api/roles/permission-matrix`
-10. `GET /api/products/filter-options`
-11. `POST /api/products/search`
-12. `GET /api/audit/logs`
-13. `GET /api/audit/logs/grouped-by-user`
-14. `GET /api/dashboard/summary`
-15. `POST /api/notifications/process-next`
+```java
+private List<EmployeeSkills> skills = new ArrayList<>();
+```
+
+This avoids `NullPointerException` when calling:
+
+```java
+employee.addSkill(skill);
+```
+
+## 2. `addSkill()` is the correct way to maintain the relationship
+
+Instead of doing:
+
+```java
+employee.getSkills().add(skill);
+```
+
+use:
+
+```java
+employee.addSkill(skill);
+```
+
+because it also sets:
+
+```java
+skill.setEmployee(employee);
+```
+
+## 3. Cascade save is important here
+
+Because you are saving employees with:
+
+```java
+employeeRepository.saveAll(employees);
+```
+
+and `cascade = CascadeType.ALL` is already present, the related `EmployeeSkills` records are saved automatically.
+
+## 4. `orphanRemoval = true` helps during delete/update operations
+
+If a skill is removed from the employee's skill list properly, JPA will remove that orphan record from the database.
+
+## 5. Your dummy data currently stores values in uppercase
+
+```java
+skill.setSkillName(randomSkill().toUpperCase());
+skill.setSkillLevel(randomSkillLevel().getLevelLabel().toUpperCase());
+```
+
+So API responses for skill names and levels will likely come back in uppercase unless you format them in DTO mapping.
 
 ---
+
+# Recommended Build Order
+
+If you want to implement step by step, follow this order:
+
+1. `POST /api/employees/dummy-data/{count}`
+2. `GET /api/employees`
+3. `GET /api/employees/{employeeId}`
+4. `GET /api/employees/departments`
+5. `GET /api/employees/grouped-by-department`
+6. `GET /api/employees/skills`
+7. `GET /api/employees/by-skill/{skillName}`
+8. `GET /api/employees/count-by-department`
+9. `GET /api/employees/count-by-skill`
+10. `GET /api/employees/skill-count-by-department`
+11. `GET /api/employees/filter-options`
+12. `POST /api/employees/search`
+13. `GET /api/employees/grouped-by-skill-level`
+14. `GET /api/employees/dashboard-summary`
+15. `DELETE /api/employees/{employeeId}/skills/{skillId}`
+
+---
+
+# Final Note
+
+This updated version now matches your actual code structure much better than the old generic users/orders/products example.
+
+Your current project mainly demonstrates:
+
+- `List<EmployeeSkills>` inside `Employee`
+- `Set<String>` for unique departments/skills
+- `Map<String, List<...>>` for grouping
+- `Map<String, Long>` for counts and summaries
+- `List<Employee>` creation in dummy data generation
+

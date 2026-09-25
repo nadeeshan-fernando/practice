@@ -1,5 +1,6 @@
 package com.practice.practice.controller;
 
+import com.practice.practice.model.dto.ApiResponse;
 import com.practice.practice.model.dto.EmployeeDTO;
 import com.practice.practice.service.EmployeeService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,27 +21,26 @@ public class EmployeeController {
   private final EmployeeService employeeService;
 
   @PostMapping
-  public ResponseEntity<EmployeeDTO> addEmployee(@RequestBody final EmployeeDTO employeeDTO) {
-    EmployeeDTO created = employeeService.addEmployee(employeeDTO);
-    return ResponseEntity.status(HttpStatus.CREATED).body(created); // 201
+  public ApiResponse<EmployeeDTO> addEmployee(@RequestBody final EmployeeDTO employeeDTO) {
+    return employeeService.addEmployee(employeeDTO); // 201
   }
 
   @GetMapping
-  public ResponseEntity<List<EmployeeDTO>> getAllEmployees() {
-    return ResponseEntity.ok(employeeService.getAllEmployees()); // 200 + []
+  public ApiResponse<List<EmployeeDTO>> getAllEmployees() {
+    return employeeService.getAllEmployees(); // 200 + []
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<EmployeeDTO> getEmployeeById(@PathVariable final UUID id) {
-    return ResponseEntity.ok(employeeService.getEmployeeById(id)); // 200 (or 404 via handler)
+  public ApiResponse<EmployeeDTO> getEmployeeById(@PathVariable final UUID id) {
+    return employeeService.getEmployeeById(id); // 200 (or 404 via handler)
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<EmployeeDTO> updateEmployeeById(
+  public ApiResponse<EmployeeDTO> updateEmployeeById(
           @PathVariable final UUID id,
           @RequestBody final EmployeeDTO employeeDTO
   ) {
-    return ResponseEntity.ok(employeeService.updateEmployeeById(id, employeeDTO));
+    return employeeService.updateEmployeeById(id, employeeDTO);
   }
 
   @DeleteMapping("/{id}")
@@ -50,7 +50,7 @@ public class EmployeeController {
   }
 
   @GetMapping("/search")
-  public ResponseEntity<List<EmployeeDTO>> getEmployeeBySkills(@RequestParam final String skillName) {
-    return ResponseEntity.ok(employeeService.getEmployeeBySkills(skillName));
+  public ApiResponse<List<EmployeeDTO>> getEmployeeBySkills(@RequestParam final String skillName) {
+    return employeeService.getEmployeeBySkills(skillName);
   }
 }

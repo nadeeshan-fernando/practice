@@ -1,6 +1,7 @@
 package com.practice.practice.service.impl;
 
 import com.practice.practice.exception.ResourceNotFoundException;
+import com.practice.practice.model.dto.ApiResponse;
 import com.practice.practice.model.dto.EmployeeDTO;
 import com.practice.practice.model.entity.Employee;
 import com.practice.practice.model.entity.EmployeeSkills;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +26,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
   @Override
   @Transactional
-  public EmployeeDTO addEmployee(EmployeeDTO dto) {
+  public ApiResponse<EmployeeDTO> addEmployee(EmployeeDTO dto) {
     Employee emp = new Employee();
     emp.setName(dto.getName());
     emp.setDepartment(dto.getDepartment());
@@ -40,33 +42,54 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     Employee saved = employeeRepository.save(emp);
-    return EmployeeTransformer.transformToObject(saved);
+
+    return ApiResponse.<EmployeeDTO>builder()
+            .success(true)
+            .message("Employee created successfully")
+            .data(EmployeeTransformer.transformToObject(saved))
+            .timestamp(LocalDateTime.now())
+            .build();
   }
 
   @Override
-  public List<EmployeeDTO> getAllEmployees() {
+  public ApiResponse<List<EmployeeDTO>> getAllEmployees() {
     // best practice: return [] when empty
-    return EmployeeTransformer.transformToList(employeeRepository.findAll());
+    List<EmployeeDTO> employeeDTOList = EmployeeTransformer.transformToList(employeeRepository.findAll());
+    return ApiResponse.<List<EmployeeDTO>>builder()
+            .success(true)
+            .message("Employee fetched successfully")
+            .data(employeeDTOList)
+            .count(employeeDTOList.size())
+            .timestamp(LocalDateTime.now())
+            .build();
   }
 
   @Override
-  public EmployeeDTO getEmployeeById(final UUID id) {
+  public ApiResponse<EmployeeDTO> getEmployeeById(final UUID id) {
     Employee employee = employeeRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
-    return EmployeeTransformer.transformToObject(employee);
+    return ApiResponse.<EmployeeDTO>builder()
+            .success(true)
+            .message("Employee fetched by id successfully")
+            .data(EmployeeTransformer.transformToObject(employee))
+            .timestamp(LocalDateTime.now())
+            .build();
   }
 
   @Override
   @Transactional
-  public EmployeeDTO updateEmployeeById(final UUID id, final EmployeeDTO employeeDTO) {
+  public ApiResponse<EmployeeDTO> updateEmployeeById(final UUID id, final EmployeeDTO employeeDTO) {
     Employee employee = employeeRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
 
     employee.setName(employeeDTO.getName());
     employee.setDepartment(employeeDTO.getDepartment());
-
-    Employee updated = employeeRepository.save(employee);
-    return EmployeeTransformer.transformToObject(updated);
+    return ApiResponse.<EmployeeDTO>builder()
+            .success(true)
+            .message("Employee updated successfully")
+            .data(EmployeeTransformer.transformToObject(employeeRepository.save(employee)))
+            .timestamp(LocalDateTime.now())
+            .build();
   }
 
   @Override
@@ -78,7 +101,14 @@ public class EmployeeServiceImpl implements EmployeeService {
   }
 
   @Override
-  public List<EmployeeDTO> getEmployeeBySkills(final String skillName) {
-    return EmployeeTransformer.transformToList(employeeRepository.findEmployeesBySkillFetchSkills(skillName.toUpperCase()));
+  public ApiResponse<List<EmployeeDTO>> getEmployeeBySkills(final String skillName) {
+    List<EmployeeDTO> employeeDTOList = EmployeeTransformer.transformToList(employeeRepository.findEmployeesBySkillFetchSkills(skillName.toUpperCase()));
+    return ApiResponse.<List<EmployeeDTO>>builder()
+            .success(true)
+            .message("Employee fetched by skill successfully")
+            .data(employeeDTOList)
+            .count(employeeDTOList.size())
+            .timestamp(LocalDateTime.now())
+            .build();
   }
 }

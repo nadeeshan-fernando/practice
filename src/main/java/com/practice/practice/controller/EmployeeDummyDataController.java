@@ -19,7 +19,7 @@ public class EmployeeDummyDataController {
 
     @PostMapping("/dummy")
     public ResponseEntity<String> generateDummyEmployees(
-            @RequestParam(defaultValue = "1000") int count) {
+            @RequestParam(defaultValue = "20") int count) {
 
         String response = employeeDummyDataService.generateDummyEmployees(count);
         return ResponseEntity.ok(response);
